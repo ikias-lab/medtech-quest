@@ -135,6 +135,7 @@ export interface Player {
   id: string;
   name: string;
   role: RoleId | null;
+  isBot?: boolean;
 }
 
 // Checklist

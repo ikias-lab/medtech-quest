@@ -43,6 +43,9 @@ export function CardDrawArea({
   const player = gameState.players.find((p) => p.id === playerId);
   const isMedical = player?.role === 'medical';
   const hasDrawnEffect = gameState.effectCardsDrawnThisRound.includes(playerId);
+  const pendingBots = gameState.players.filter(
+    (p) => p.isBot && !gameState.effectCardsDrawnThisRound.includes(p.id)
+  );
   const drawnCard = gameState.currentDrawnEffectCard
     ? getRoleEffectCard(gameState.currentDrawnEffectCard)
     : null;
@@ -51,6 +54,13 @@ export function CardDrawArea({
 
   return (
     <div className="card-draw-area">
+      {/* CPU processing indicator */}
+      {pendingBots.length > 0 && (
+        <div className="bot-processing">
+          🤖 CPU処理中: {pendingBots.map((p) => p.name).join('、')}...
+        </div>
+      )}
+
       {/* Phase 1 only: Clue card draw (medical player) */}
       {gameState.phase === 1 && isMedical && !gameState.clueDrawnThisRound && (
         <div className="action-section">

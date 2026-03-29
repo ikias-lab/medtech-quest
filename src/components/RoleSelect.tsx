@@ -13,6 +13,7 @@ interface RoleSelectProps {
 }
 
 const ALL_ROLES: RoleId[] = ['medical', 'dev', 'qa', 'biz', 'coordinator'];
+const REQUIRED_ROLES: RoleId[] = ['medical', 'dev', 'qa', 'biz'];
 
 export function RoleSelect({
   gameState,
@@ -30,11 +31,14 @@ export function RoleSelect({
   const myRole = myPlayer?.role;
 
   const takenRoles = gameState.players.filter((p) => p.id !== playerId).map((p) => p.role);
+  const humanRoles = gameState.players.map((p) => p.role).filter(Boolean) as RoleId[];
+  const botRoles = REQUIRED_ROLES.filter((r) => !humanRoles.includes(r));
 
-  const allRolesSelected =
-    gameState.players.length >= 4 && gameState.players.every((p) => p.role !== null);
+  // Can start: ≥1 player, all humans have selected a role
+  const allHumansReady =
+    gameState.players.length >= 1 && gameState.players.every((p) => p.role !== null);
 
-  const canStart = isHost && allRolesSelected;
+  const canStart = isHost && allHumansReady;
 
   return (
     <div className="role-select-screen">
@@ -63,6 +67,16 @@ export function RoleSelect({
               ) : (
                 <span className="role-pending">選択中...</span>
               )}
+            </div>
+          ))}
+          {/* CPU slots for missing roles */}
+          {botRoles.map((role) => (
+            <div key={`bot_${role}`} className="player-row bot-row">
+              <span className="player-name-chip bot-chip">CPU</span>
+              <span className="bot-badge">自動操作</span>
+              <span className="role-chip" style={{ backgroundColor: ROLE_COLORS[role], opacity: 0.6 }}>
+                {ROLE_NAMES[role]}
+              </span>
             </div>
           ))}
         </div>
@@ -154,10 +168,11 @@ export function RoleSelect({
               className="btn btn-start"
               onClick={() => onStartGame(selectedCompany, selectedNeeds)}
               disabled={loading || !canStart}
-              title={!canStart ? '全員（4人以上）が役割を選択してください' : ''}
+              title={!canStart ? '全員が役割を選択してください' : ''}
             >
               ゲームスタート！
-              {!canStart && ` (${gameState.players.filter((p) => p.role).length}/${Math.max(4, gameState.players.length)}人選択済み)`}
+              {botRoles.length > 0 && ` (CPU ${botRoles.length}人補完)`}
+              {!canStart && ' ⏳'}
             </button>
           </div>
         )}

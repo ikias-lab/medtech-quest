@@ -9,8 +9,16 @@ interface PhaseInfoProps {
   onAdvancePhase: () => void;
   onEndRound: () => void;
   onCalculateFinal: () => void;
+  onToggleChecklist: (key: keyof GameState['checklist']) => void;
   loading: boolean;
 }
+
+const CHECKLIST_BY_ROLE: Partial<Record<string, (keyof GameState['checklist'])[]>> = {
+  medical: ['medScene', 'medUser'],
+  dev: ['devSpec'],
+  qa: ['qaData', 'qaRisk'],
+  biz: ['bizSales'],
+};
 
 export function PhaseInfo({
   gameState,
@@ -18,8 +26,11 @@ export function PhaseInfo({
   onAdvancePhase,
   onEndRound,
   onCalculateFinal,
+  onToggleChecklist,
   loading,
 }: PhaseInfoProps) {
+  const myPlayer = gameState.players.find((p) => p.id === playerId);
+  const myChecklistKeys = myPlayer?.role ? (CHECKLIST_BY_ROLE[myPlayer.role] ?? []) : [];
   const isHost = gameState.hostId === playerId;
   const { canAdvance, reason } = checkPhaseTransition(gameState);
   const company = getCompanyCard(gameState.company ?? '');
@@ -125,21 +136,31 @@ export function PhaseInfo({
 
       {/* Checklist */}
       <div className="checklist-section">
-        <div className="checklist-title">チェックリスト</div>
+        <div className="checklist-title">チェックリスト（Ph.5 届出準備）</div>
         <div className="checklist-items">
           {Object.entries(gameState.checklist).map(([key, val]) => {
             const labels: Record<string, string> = {
-              medScene: '現場確認(医)',
-              medUser: 'ユーザー確認(医)',
-              devSpec: '仕様確定(開)',
-              qaData: 'データ収集(QA)',
-              qaRisk: 'リスク評価(QA)',
-              bizSales: '販路確認(事)',
+              medScene: '使用場面の整理（医）',
+              medUser: '対象ユーザーの定義（医）',
+              devSpec: '仕様書の整合性確認（開）',
+              qaData: '安全性データの準備（QA）',
+              qaRisk: 'リスク管理項目の記入（QA）',
+              bizSales: '販売仮説・価格説明の準備（事）',
             };
+            const isMyItem = myChecklistKeys.includes(key as keyof GameState['checklist']);
             return (
-              <span key={key} className={`checklist-item ${val ? 'checked' : ''}`}>
-                {val ? '☑' : '☐'} {labels[key]}
-              </span>
+              <div key={key} className={`checklist-item ${val ? 'checked' : ''}`}>
+                <span>{val ? '☑' : '☐'} {labels[key]}</span>
+                {isMyItem && !val && (
+                  <button
+                    className="btn btn-sm btn-outline checklist-btn"
+                    onClick={() => onToggleChecklist(key as keyof GameState['checklist'])}
+                    disabled={loading}
+                  >
+                    完了
+                  </button>
+                )}
+              </div>
             );
           })}
         </div>

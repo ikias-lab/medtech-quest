@@ -1,8 +1,10 @@
-import type { GameState, Tracks, RoleId, CompanyId, NeedsId, LogEntry } from './types';
+import type { GameState, Tracks, RoleId, CompanyId, NeedsId, LogEntry, Player, Checklist } from './types';
+import { ROLE_NAMES } from './types';
 import {
   CLUE_CARDS,
   ROLE_EFFECT_CARDS,
   DRAMA_CARDS,
+  MEDICAL_DEVICE_CARDS,
   getCompanyCard,
   getRoleEffectCard,
   getDramaCard,
@@ -154,7 +156,8 @@ export function startGame(
     crisisMode: false,
   };
 
-  return addLog(newState, `ゲーム開始！会社: ${company.name}、ニーズカード: ${needsCardId}`);
+  const withBots = fillBotsForMissingRoles({ ...newState });
+  return addLog(withBots, `ゲーム開始！会社: ${company.name}、ニーズカード: ${needsCardId}`);
 }
 
 // Apply role effect card to tracks
@@ -574,4 +577,96 @@ export function setAttributeGuess(
     { ...state, attributeGuess: guess },
     `ニーズ属性予測: 頻度=${guess?.freq}, 深刻度=${guess?.severity}, 代替=${guess?.alt}, 事業性=${guess?.biz}`
   );
+}
+
+// ─────────────────────────────────────────────
+// Bot (CPU player) functions
+// ─────────────────────────────────────────────
+
+const REQUIRED_ROLES: RoleId[] = ['medical', 'dev', 'qa', 'biz'];
+
+// Fill missing mandatory roles with CPU players
+export function fillBotsForMissingRoles(state: GameState): GameState {
+  const takenRoles = state.players.map((p) => p.role).filter(Boolean) as RoleId[];
+  const missing = REQUIRED_ROLES.filter((r) => !takenRoles.includes(r));
+  if (missing.length === 0) return state;
+
+  const bots: Player[] = missing.map((role) => ({
+    id: `bot_${role}`,
+    name: `CPU(${ROLE_NAMES[role]})`,
+    role,
+    isBot: true,
+  }));
+
+  const botNames = bots.map((b) => b.name).join('、');
+  return addLog(
+    { ...state, players: [...state.players, ...bots] },
+    `CPUプレイヤーが参加: ${botNames}`
+  );
+}
+
+// Check if there are any pending bot actions this round
+export function hasPendingBotActions(state: GameState): boolean {
+  return state.players.some(
+    (p) => p.isBot && !state.effectCardsDrawnThisRound.includes(p.id)
+  );
+}
+
+// Execute effect card draw for one bot (first pending bot)
+export function executeBotEffectCard(state: GameState): GameState {
+  const bot = state.players.find(
+    (p) => p.isBot && !state.effectCardsDrawnThisRound.includes(p.id)
+  );
+  if (!bot || state.effectCardDeck.length === 0) return state;
+  return applyEffectCard(state, state.effectCardDeck[0], bot.id);
+}
+
+// Ph.1: medical bot draws clue publicly
+export function executeBotClueAction(state: GameState): GameState {
+  const medBot = state.players.find((p) => p.role === 'medical' && p.isBot);
+  if (!medBot || state.clueDrawnThisRound || state.clueCardDeck.length === 0) return state;
+  return drawClueCard(state, true);
+}
+
+// Ph.2: medical bot submits attribute guess (neutral values)
+export function executeBotAttributeGuess(state: GameState): GameState {
+  const medBot = state.players.find((p) => p.role === 'medical' && p.isBot);
+  if (!medBot || state.attributeGuess) return state;
+  return setAttributeGuess(state, { freq: '中', severity: '中', alt: 'ややあり', biz: '中' });
+}
+
+// Ph.2: auto-select medical device if only bots remain (pick first non-trap card)
+export function executeBotDeviceSelect(state: GameState): GameState {
+  if (state.medicalDeviceCardId) return state;
+  const nonTrap = MEDICAL_DEVICE_CARDS.find((c) => !c.isTrap);
+  if (!nonTrap) return state;
+  return addLog(
+    { ...state, medicalDeviceCardId: nonTrap.id },
+    `CPU: 医療デバイス「${nonTrap.name}」を自動選択`
+  );
+}
+
+// Ph.5: auto-complete checklist items owned by bot roles
+const CHECKLIST_BY_ROLE: Partial<Record<RoleId, (keyof Checklist)[]>> = {
+  medical: ['medScene', 'medUser'],
+  dev: ['devSpec'],
+  qa: ['qaData', 'qaRisk'],
+  biz: ['bizSales'],
+};
+
+export function executeBotChecklist(state: GameState): GameState {
+  let newState = { ...state };
+  let changed = false;
+  state.players.forEach((p) => {
+    if (!p.isBot || !p.role) return;
+    const keys = CHECKLIST_BY_ROLE[p.role] ?? [];
+    keys.forEach((key) => {
+      if (!newState.checklist[key]) {
+        newState = { ...newState, checklist: { ...newState.checklist, [key]: true } };
+        newState = addLog(newState, `CPU(${ROLE_NAMES[p.role!]}): チェック「${key}」完了`);
+        changed = true;
+      }
+    });
+  });
+  return changed ? newState : state;
 }

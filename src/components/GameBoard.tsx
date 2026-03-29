@@ -68,6 +68,7 @@ export function GameBoard({
             onAdvancePhase={onAdvancePhase}
             onEndRound={onEndRound}
             onCalculateFinal={onCalculateFinal}
+            onToggleChecklist={onToggleChecklist}
             loading={loading}
           />
           <TrackPanel tracks={gameState.tracks} crisisMode={gameState.crisisMode} />
@@ -102,12 +103,6 @@ export function GameBoard({
         />
       )}
 
-      {/* Invisible checklist toggle buttons (accessible via role panel / phase info) */}
-      <div style={{ display: 'none' }}>
-        {(Object.keys(gameState.checklist) as (keyof GameState['checklist'])[]).map((key) => (
-          <button key={key} onClick={() => onToggleChecklist(key)} />
-        ))}
-      </div>
     </div>
   );
 }

@@ -17,6 +17,12 @@ import {
   setAttributeGuess,
   calculateFinalResult,
   addLog,
+  hasPendingBotActions,
+  executeBotEffectCard,
+  executeBotClueAction,
+  executeBotAttributeGuess,
+  executeBotDeviceSelect,
+  executeBotChecklist,
 } from '../lib/gameLogic';
 import { generateRoomCode, getOrCreatePlayerId } from '../lib/utils';
 
@@ -306,6 +312,54 @@ export function useGame(): UseGameReturn {
   const calculateFinalAction = useCallback(async () => {
     await mutate((state) => calculateFinalResult(state));
   }, [mutate]);
+
+  // Bot automation: auto-execute CPU player actions with a short delay
+  useEffect(() => {
+    if (!gameState || gameState.status !== 'playing' || loading) return;
+
+    const medBot = gameState.players.find((p) => p.role === 'medical' && p.isBot);
+
+    // Determine next bot action
+    let botAction: ((s: GameState) => GameState) | null = null;
+
+    if (gameState.phase === 1 && medBot && !gameState.clueDrawnThisRound) {
+      botAction = executeBotClueAction;
+    } else if (gameState.phase === 2 && medBot && !gameState.attributeGuess) {
+      botAction = executeBotAttributeGuess;
+    } else if (
+      gameState.phase === 2 &&
+      !gameState.medicalDeviceCardId &&
+      gameState.players.every((p) => p.isBot || !['dev', 'biz'].includes(p.role ?? ''))
+    ) {
+      // Auto-select device only if no human dev/biz player exists
+      botAction = executeBotDeviceSelect;
+    } else if (gameState.phase === 5) {
+      const botKeys = gameState.players
+        .filter((p) => p.isBot && p.role)
+        .flatMap((p) => {
+          const map: Partial<Record<string, (keyof GameState['checklist'])[]>> = {
+            medical: ['medScene', 'medUser'],
+            dev: ['devSpec'],
+            qa: ['qaData', 'qaRisk'],
+            biz: ['bizSales'],
+          };
+          return map[p.role!] ?? [];
+        });
+      const hasPending = botKeys.some((k) => !gameState.checklist[k]);
+      if (hasPending) botAction = executeBotChecklist;
+    } else if (hasPendingBotActions(gameState)) {
+      botAction = executeBotEffectCard;
+    }
+
+    if (!botAction) return;
+
+    const fn = botAction;
+    const timer = setTimeout(() => {
+      mutate((s) => fn(s));
+    }, 1200);
+
+    return () => clearTimeout(timer);
+  }, [gameState, loading, mutate]);
 
   // Cleanup subscription on unmount
   useEffect(() => {
