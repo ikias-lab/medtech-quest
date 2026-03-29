@@ -6,6 +6,7 @@ import { DramaCardModal } from './DramaCardModal';
 import { PhaseInfo } from './PhaseInfo';
 import { GameLog } from './GameLog';
 import { PriorityDeclarationPanel } from './PriorityDeclarationPanel';
+import { RoundEffectSummary } from './RoundEffectSummary';
 import { needsPriorityDeclaration } from '../lib/gameLogic';
 
 interface GameBoardProps {
@@ -78,6 +79,7 @@ export function GameBoard({
             loading={loading}
           />
           <TrackPanel tracks={gameState.tracks} crisisMode={gameState.crisisMode} />
+          <RoundEffectSummary gameState={gameState} />
           <GameLog log={gameState.log} />
         </div>
 

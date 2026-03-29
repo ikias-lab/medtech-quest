@@ -46,6 +46,25 @@ export interface NeedsCard {
   attrs: NeedsCardAttrs;
 }
 
+// Clue card attribute hint
+export type ClueAttr = 'freq' | 'severity' | 'alt' | 'biz' | 'product';
+
+export const CLUE_ATTR_NAMES: Record<ClueAttr, string> = {
+  freq: '頻度',
+  severity: '深刻度',
+  alt: '代替手段',
+  biz: '事業性',
+  product: '製品・運用',
+};
+
+export const CLUE_ATTR_ICONS: Record<ClueAttr, string> = {
+  freq: '🔁',
+  severity: '⚠️',
+  alt: '🔄',
+  biz: '💰',
+  product: '🔧',
+};
+
 // Clue cards
 export interface ClueCard {
   id: string;
@@ -53,6 +72,19 @@ export interface ClueCard {
   level: 1 | 2 | 3;
   text: string;
   isMislead: boolean;
+  hintAttr: ClueAttr; // which attribute this clue hints at
+}
+
+// Round effect history entry
+export interface RoundEffectEntry {
+  playerId: string;
+  playerName: string;
+  role: RoleId;
+  cardId: string;
+  cardName: string;
+  productPowerDelta: number;
+  bizPowerDelta: number;
+  fundsDelta: number;
 }
 
 // Role effect cards
@@ -220,4 +252,5 @@ export interface GameState {
   priorityDeclarationResolved: boolean;
   roundBonusTrack: PriorityTrackId | null;   // 2+ same → +1 to this track
   roundConflictPenalty: boolean;             // all different → -1 to all tracks
+  roundEffectHistory: RoundEffectEntry[];    // card draws with track deltas this round
 }

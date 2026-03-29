@@ -1,4 +1,4 @@
-import type { GameState, Tracks, RoleId, CompanyId, NeedsId, LogEntry, Player, Checklist, PriorityTrackId } from './types';
+import type { GameState, Tracks, RoleId, CompanyId, NeedsId, LogEntry, Player, Checklist, PriorityTrackId, RoundEffectEntry } from './types';
 import { ROLE_NAMES, PRIORITY_TRACK_NAMES } from './types';
 import {
   CLUE_CARDS,
@@ -107,6 +107,7 @@ export function createInitialGameState(roomId: string, hostId: string): GameStat
     priorityDeclarationResolved: false,
     roundBonusTrack: null,
     roundConflictPenalty: false,
+    roundEffectHistory: [],
   };
 }
 
@@ -162,6 +163,7 @@ export function startGame(
     priorityDeclarationResolved: false,
     roundBonusTrack: null,
     roundConflictPenalty: false,
+    roundEffectHistory: [],
   };
 
   const withBots = fillBotsForMissingRoles({ ...newState });
@@ -200,12 +202,24 @@ export function applyEffectCard(
   const effectCardDeck = state.effectCardDeck.filter((id) => id !== cardId);
   const effectCardsDrawnThisRound = [...state.effectCardsDrawnThisRound, playerId];
 
+  const historyEntry: RoundEffectEntry = {
+    playerId,
+    playerName: player.name,
+    role: player.role,
+    cardId,
+    cardName: card.name,
+    productPowerDelta,
+    bizPowerDelta,
+    fundsDelta,
+  };
+
   let newState: GameState = {
     ...state,
     tracks: newTracks,
     effectCardDeck,
     effectCardsDrawnThisRound,
     currentDrawnEffectCard: cardId,
+    roundEffectHistory: [...state.roundEffectHistory, historyEntry],
   };
 
   newState = addLog(
@@ -333,6 +347,7 @@ export function endRound(state: GameState): GameState {
     priorityDeclarationResolved: false,
     roundBonusTrack: null,
     roundConflictPenalty: false,
+    roundEffectHistory: [],
   };
 
   // Large maker C: funds-1 on phase transitions (handled in checkPhaseTransition)

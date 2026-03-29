@@ -73,36 +73,36 @@ export const NEEDS_CARDS: NeedsCard[] = [
 // ============================================================
 export const CLUE_CARDS: ClueCard[] = [
   // N-01
-  { id: 'C-01-1', needsId: 'N-01', level: 1, text: '処置の頻度は非常に高い（毎日複数回）', isMislead: false },
-  { id: 'C-01-2', needsId: 'N-01', level: 1, text: '既存の代替品がいくつか存在する', isMislead: false },
-  { id: 'C-01-3', needsId: 'N-01', level: 2, text: '感染管理との両立が最大の課題', isMislead: false },
-  { id: 'C-01-4', needsId: 'N-01', level: 2, text: '事業性は非常に高く競合も少ない', isMislead: true },
-  { id: 'C-01-5', needsId: 'N-01', level: 3, text: '深刻度は中程度（代替手段で対処可能）', isMislead: false },
-  { id: 'C-01-6', needsId: 'N-01', level: 3, text: '手技の複雑さと手袋着用が操作を困難にしている', isMislead: false },
+  { id: 'C-01-1', needsId: 'N-01', level: 1, text: '処置の頻度は非常に高い（毎日複数回）',             isMislead: false, hintAttr: 'freq' },
+  { id: 'C-01-2', needsId: 'N-01', level: 1, text: '既存の代替品がいくつか存在する',                   isMislead: false, hintAttr: 'alt' },
+  { id: 'C-01-3', needsId: 'N-01', level: 2, text: '感染管理との両立が最大の課題',                     isMislead: false, hintAttr: 'product' },
+  { id: 'C-01-4', needsId: 'N-01', level: 2, text: '事業性は非常に高く競合も少ない',                   isMislead: true,  hintAttr: 'biz' },
+  { id: 'C-01-5', needsId: 'N-01', level: 3, text: '深刻度は中程度（代替手段で対処可能）',             isMislead: false, hintAttr: 'severity' },
+  { id: 'C-01-6', needsId: 'N-01', level: 3, text: '手技の複雑さと手袋着用が操作を困難にしている',     isMislead: false, hintAttr: 'product' },
 
   // N-02
-  { id: 'C-02-1', needsId: 'N-02', level: 1, text: '夜間帯のインシデント頻度が高い', isMislead: false },
-  { id: 'C-02-2', needsId: 'N-02', level: 1, text: '既存のナースコールでは不十分', isMislead: false },
-  { id: 'C-02-3', needsId: 'N-02', level: 2, text: '深刻度は高く、重大事故につながりうる', isMislead: false },
-  { id: 'C-02-4', needsId: 'N-02', level: 2, text: '病院全体での導入需要は非常に大きい', isMislead: true },
-  { id: 'C-02-5', needsId: 'N-02', level: 3, text: '少人数夜勤で全員への目配りが限界', isMislead: false },
-  { id: 'C-02-6', needsId: 'N-02', level: 3, text: '既存システムとの連携ハードルが高い', isMislead: false },
+  { id: 'C-02-1', needsId: 'N-02', level: 1, text: '夜間帯のインシデント頻度が高い',                   isMislead: false, hintAttr: 'freq' },
+  { id: 'C-02-2', needsId: 'N-02', level: 1, text: '既存のナースコールでは不十分',                     isMislead: false, hintAttr: 'alt' },
+  { id: 'C-02-3', needsId: 'N-02', level: 2, text: '深刻度は高く、重大事故につながりうる',             isMislead: false, hintAttr: 'severity' },
+  { id: 'C-02-4', needsId: 'N-02', level: 2, text: '病院全体での導入需要は非常に大きい',               isMislead: true,  hintAttr: 'biz' },
+  { id: 'C-02-5', needsId: 'N-02', level: 3, text: '少人数夜勤で全員への目配りが限界',                 isMislead: false, hintAttr: 'freq' },
+  { id: 'C-02-6', needsId: 'N-02', level: 3, text: '既存システムとの連携ハードルが高い',               isMislead: false, hintAttr: 'product' },
 
   // N-03
-  { id: 'C-03-1', needsId: 'N-03', level: 1, text: '準備手順が標準化されていない部署が多い', isMislead: false },
-  { id: 'C-03-2', needsId: 'N-03', level: 1, text: '代替手段がなく現状の課題が深刻', isMislead: false },
-  { id: 'C-03-3', needsId: 'N-03', level: 2, text: '緊急時の準備ミスは重篤なリスクにつながる', isMislead: false },
-  { id: 'C-03-4', needsId: 'N-03', level: 2, text: '複数の病院から強い引き合いがある', isMislead: true },
-  { id: 'C-03-5', needsId: 'N-03', level: 3, text: '頻度は中程度（緊急時のみ）', isMislead: false },
-  { id: 'C-03-6', needsId: 'N-03', level: 3, text: '視覚的な手順ガイドとチェックリストが有効', isMislead: false },
+  { id: 'C-03-1', needsId: 'N-03', level: 1, text: '準備手順が標準化されていない部署が多い',           isMislead: false, hintAttr: 'product' },
+  { id: 'C-03-2', needsId: 'N-03', level: 1, text: '代替手段がなく現状の課題が深刻',                   isMislead: false, hintAttr: 'alt' },
+  { id: 'C-03-3', needsId: 'N-03', level: 2, text: '緊急時の準備ミスは重篤なリスクにつながる',         isMislead: false, hintAttr: 'severity' },
+  { id: 'C-03-4', needsId: 'N-03', level: 2, text: '複数の病院から強い引き合いがある',                 isMislead: true,  hintAttr: 'biz' },
+  { id: 'C-03-5', needsId: 'N-03', level: 3, text: '頻度は中程度（緊急時のみ）',                       isMislead: false, hintAttr: 'freq' },
+  { id: 'C-03-6', needsId: 'N-03', level: 3, text: '視覚的な手順ガイドとチェックリストが有効',         isMislead: false, hintAttr: 'product' },
 
   // N-04
-  { id: 'C-04-1', needsId: 'N-04', level: 1, text: '記録のばらつきが経過観察の質を下げている', isMislead: false },
-  { id: 'C-04-2', needsId: 'N-04', level: 1, text: '動作解析ツールへの代替はほぼない', isMislead: false },
-  { id: 'C-04-3', needsId: 'N-04', level: 2, text: '事業性は高く、介護施設への展開も見込める', isMislead: false },
-  { id: 'C-04-4', needsId: 'N-04', level: 2, text: '深刻度は非常に高く即時対応が必要', isMislead: true },
-  { id: 'C-04-5', needsId: 'N-04', level: 3, text: '評価者間のばらつきが最大の課題', isMislead: false },
-  { id: 'C-04-6', needsId: 'N-04', level: 3, text: 'リハビリ科だけでなく整形外科でも需要あり', isMislead: false },
+  { id: 'C-04-1', needsId: 'N-04', level: 1, text: '記録のばらつきが経過観察の質を下げている',         isMislead: false, hintAttr: 'product' },
+  { id: 'C-04-2', needsId: 'N-04', level: 1, text: '動作解析ツールへの代替はほぼない',                 isMislead: false, hintAttr: 'alt' },
+  { id: 'C-04-3', needsId: 'N-04', level: 2, text: '事業性は高く、介護施設への展開も見込める',         isMislead: false, hintAttr: 'biz' },
+  { id: 'C-04-4', needsId: 'N-04', level: 2, text: '深刻度は非常に高く即時対応が必要',                 isMislead: true,  hintAttr: 'severity' },
+  { id: 'C-04-5', needsId: 'N-04', level: 3, text: '評価者間のばらつきが最大の課題',                   isMislead: false, hintAttr: 'product' },
+  { id: 'C-04-6', needsId: 'N-04', level: 3, text: 'リハビリ科だけでなく整形外科でも需要あり',         isMislead: false, hintAttr: 'biz' },
 ];
 
 // ============================================================

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { GameState } from '../lib/types';
+import { ROLE_NAMES, CLUE_ATTR_NAMES, CLUE_ATTR_ICONS } from '../lib/types';
 import {
   getRoleEffectCard,
   getMedicalDeviceCard,
@@ -8,7 +9,6 @@ import {
   getClueCard,
 } from '../data/cards';
 import { allEffectCardsDrawn } from '../lib/gameLogic';
-import { ROLE_NAMES } from '../lib/types';
 
 interface CardDrawAreaProps {
   gameState: GameState;
@@ -88,13 +88,21 @@ export function CardDrawArea({
       {/* Medical: reveal private clues */}
       {isMedical && gameState.medicalPrivateClues.length > 0 && (
         <div className="action-section">
-          <h4>非公開クルーを公開する</h4>
+          <h4>非公開クルー（あなただけが見えています）</h4>
           <div className="clue-list">
             {gameState.medicalPrivateClues.map((id) => {
               const card = getClueCard(id);
+              const attr = card?.hintAttr;
               return (
-                <div key={id} className="clue-reveal-item">
-                  <span className="clue-level">Lv.{card?.level}</span>
+                <div key={id} className="clue-reveal-item clue-private">
+                  <div className="clue-meta">
+                    <span className={`clue-level lv${card?.level}`}>Lv.{card?.level}</span>
+                    {attr && (
+                      <span className={`clue-attr-badge attr-${attr}`}>
+                        {CLUE_ATTR_ICONS[attr]} {CLUE_ATTR_NAMES[attr]}
+                      </span>
+                    )}
+                  </div>
                   <span className="clue-text">{card?.text}</span>
                   <button
                     className="btn btn-sm btn-outline"
@@ -176,13 +184,28 @@ export function CardDrawArea({
       {gameState.clueBoard.length > 0 && (
         <div className="action-section">
           <h4>公開クルーボード</h4>
+          <p className="clue-board-hint">
+            各カードのバッジはニーズのどの属性に関するヒントかを示します。
+            {gameState.phase >= 2 && ' ⚠️マークは誤誘導カードの可能性があります。'}
+          </p>
           <div className="clue-board">
             {gameState.clueBoard.map((id) => {
               const card = getClueCard(id);
+              const attr = card?.hintAttr;
               return (
-                <div key={id} className={`clue-board-card ${card?.isMislead ? 'mislead' : ''}`}>
-                  <span className="clue-level">Lv.{card?.level}</span>
-                  <span>{card?.text}</span>
+                <div key={id} className={`clue-board-card ${card?.isMislead && gameState.phase >= 2 ? 'mislead' : ''}`}>
+                  <div className="clue-meta">
+                    <span className={`clue-level lv${card?.level}`}>Lv.{card?.level}</span>
+                    {attr && (
+                      <span className={`clue-attr-badge attr-${attr}`}>
+                        {CLUE_ATTR_ICONS[attr]} {CLUE_ATTR_NAMES[attr]}
+                      </span>
+                    )}
+                    {card?.isMislead && gameState.phase >= 2 && (
+                      <span className="clue-mislead-badge">⚠️ 要検証</span>
+                    )}
+                  </div>
+                  <span className="clue-card-text">{card?.text}</span>
                 </div>
               );
             })}
