@@ -158,6 +158,16 @@ export interface UsedAbilities {
   coBypassBuffer: boolean;
 }
 
+// Priority track declaration (role conflict mechanics)
+export type PriorityTrackId = 'fieldUnderstanding' | 'productPower' | 'bizPower' | 'trust';
+
+export const PRIORITY_TRACK_NAMES: Record<PriorityTrackId, string> = {
+  fieldUnderstanding: '現場理解',
+  productPower: '製品力',
+  bizPower: '事業力',
+  trust: '信頼',
+};
+
 // Log entry
 export interface LogEntry {
   message: string;
@@ -205,4 +215,9 @@ export interface GameState {
   dramaCardDrawnThisRound: boolean;
   // clue drawn this round (phase 1 only)
   clueDrawnThisRound: boolean;
+  // role conflict mechanics: priority track declarations
+  priorityDeclarations: Partial<Record<string, PriorityTrackId>>; // playerId → declared track
+  priorityDeclarationResolved: boolean;
+  roundBonusTrack: PriorityTrackId | null;   // 2+ same → +1 to this track
+  roundConflictPenalty: boolean;             // all different → -1 to all tracks
 }

@@ -1,5 +1,5 @@
-import type { GameState, Tracks, RoleId, CompanyId, NeedsId, LogEntry, Player, Checklist } from './types';
-import { ROLE_NAMES } from './types';
+import type { GameState, Tracks, RoleId, CompanyId, NeedsId, LogEntry, Player, Checklist, PriorityTrackId } from './types';
+import { ROLE_NAMES, PRIORITY_TRACK_NAMES } from './types';
 import {
   CLUE_CARDS,
   ROLE_EFFECT_CARDS,
@@ -103,6 +103,10 @@ export function createInitialGameState(roomId: string, hostId: string): GameStat
     effectCardsDrawnThisRound: [],
     dramaCardDrawnThisRound: false,
     clueDrawnThisRound: false,
+    priorityDeclarations: {},
+    priorityDeclarationResolved: false,
+    roundBonusTrack: null,
+    roundConflictPenalty: false,
   };
 }
 
@@ -154,6 +158,10 @@ export function startGame(
     clueDrawnThisRound: false,
     lossReason: null,
     crisisMode: false,
+    priorityDeclarations: {},
+    priorityDeclarationResolved: false,
+    roundBonusTrack: null,
+    roundConflictPenalty: false,
   };
 
   const withBots = fillBotsForMissingRoles({ ...newState });
@@ -321,6 +329,10 @@ export function endRound(state: GameState): GameState {
     currentDrawnEffectCard: null,
     awaitingDramaChoice: false,
     investModeUsedThisRound: false,
+    priorityDeclarations: {},
+    priorityDeclarationResolved: false,
+    roundBonusTrack: null,
+    roundConflictPenalty: false,
   };
 
   // Large maker C: funds-1 on phase transitions (handled in checkPhaseTransition)
@@ -669,4 +681,141 @@ export function executeBotChecklist(state: GameState): GameState {
     });
   });
   return changed ? newState : state;
+}
+
+// ─────────────────────────────────────────────
+// Role Conflict Mechanics (Section 17)
+// ─────────────────────────────────────────────
+
+// Default priority track per role (used by bots and as UI suggestion)
+export const ROLE_DEFAULT_PRIORITY: Record<RoleId, PriorityTrackId> = {
+  medical: 'fieldUnderstanding',
+  dev: 'productPower',
+  qa: 'trust',
+  biz: 'bizPower',
+  coordinator: 'fieldUnderstanding',
+};
+
+// Declare priority track for a player; auto-resolve when all have declared
+export function declarePriorityTrack(
+  state: GameState,
+  playerId: string,
+  track: PriorityTrackId
+): GameState {
+  const player = state.players.find((p) => p.id === playerId);
+  if (!player) return state;
+  if (state.priorityDeclarationResolved) return state;
+
+  const newDeclarations = { ...state.priorityDeclarations, [playerId]: track };
+  let newState: GameState = { ...state, priorityDeclarations: newDeclarations };
+
+  // Resolve when all players have declared
+  const allDeclared = state.players.every((p) => newDeclarations[p.id] !== undefined);
+  if (allDeclared) {
+    newState = resolvePriorityDeclarations({ ...newState, priorityDeclarations: newDeclarations });
+  }
+
+  return newState;
+}
+
+// Resolve declarations: compute bonus/penalty and apply immediately
+export function resolvePriorityDeclarations(state: GameState): GameState {
+  const declarations = Object.values(state.priorityDeclarations) as PriorityTrackId[];
+  const playerCount = state.players.length;
+
+  // Count per track
+  const counts: Partial<Record<PriorityTrackId, number>> = {};
+  for (const t of declarations) {
+    counts[t] = (counts[t] ?? 0) + 1;
+  }
+
+  // Bonus: 2+ players declared same track
+  const bonusTrack = (Object.entries(counts) as [PriorityTrackId, number][])
+    .find(([, count]) => count >= 2)?.[0] ?? null;
+
+  // Penalty: all declarations are different (unique count === player count)
+  const uniqueCount = Object.keys(counts).length;
+  const conflictPenalty = uniqueCount === playerCount;
+
+  // Apply effects to tracks
+  let newTracks = { ...state.tracks };
+
+  if (bonusTrack) {
+    newTracks[bonusTrack] = clamp(
+      newTracks[bonusTrack] + 1,
+      TRACK_MIN[bonusTrack],
+      TRACK_MAX[bonusTrack]
+    );
+  }
+
+  if (conflictPenalty) {
+    newTracks = clampTracks({
+      fieldUnderstanding: newTracks.fieldUnderstanding - 1,
+      productPower: newTracks.productPower - 1,
+      bizPower: newTracks.bizPower - 1,
+      trust: newTracks.trust - 1,
+      risk: newTracks.risk,
+      funds: newTracks.funds,
+    });
+  }
+
+  // Build log message
+  const declSummary = state.players
+    .map((p) => `${p.name}→${PRIORITY_TRACK_NAMES[state.priorityDeclarations[p.id]!]}`)
+    .join('、');
+
+  let resultMsg = '';
+  if (bonusTrack) {
+    resultMsg = `連携ボーナス: ${PRIORITY_TRACK_NAMES[bonusTrack]}+1`;
+  } else if (conflictPenalty) {
+    resultMsg = '衝突ペナルティ: 全トラック-1';
+  } else {
+    resultMsg = '効果なし（特定トラックへの連携なし）';
+  }
+
+  let newState: GameState = {
+    ...state,
+    tracks: newTracks,
+    priorityDeclarationResolved: true,
+    roundBonusTrack: bonusTrack,
+    roundConflictPenalty: conflictPenalty,
+  };
+
+  newState = addLog(newState, `【優先宣言】${declSummary} → ${resultMsg}`);
+  return checkInstantLoss(newState);
+}
+
+// Bot: declare priority track based on role tendency
+export function executeBotPriorityDeclaration(state: GameState): GameState {
+  if (state.priorityDeclarationResolved) return state;
+
+  let newState = { ...state };
+  let declared = false;
+
+  state.players.forEach((p) => {
+    if (!p.isBot || !p.role || newState.priorityDeclarations[p.id] !== undefined) return;
+    const track = ROLE_DEFAULT_PRIORITY[p.role];
+    newState = { ...newState, priorityDeclarations: { ...newState.priorityDeclarations, [p.id]: track } };
+    declared = true;
+  });
+
+  if (!declared) return state;
+
+  // Resolve if all players (including humans) have now declared
+  const allDeclared = newState.players.every((p) => newState.priorityDeclarations[p.id] !== undefined);
+  if (allDeclared) {
+    newState = resolvePriorityDeclarations(newState);
+  }
+
+  return newState;
+}
+
+// Check if declaration phase is active (playing but not yet resolved)
+export function needsPriorityDeclaration(state: GameState): boolean {
+  return (
+    state.status === 'playing' &&
+    !state.priorityDeclarationResolved &&
+    state.effectCardsDrawnThisRound.length === 0 &&
+    !state.dramaCardDrawnThisRound
+  );
 }

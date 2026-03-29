@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import type { GameState, RoleId, CompanyId, NeedsId } from '../lib/types';
+import type { GameState, RoleId, CompanyId, NeedsId, PriorityTrackId } from '../lib/types';
 import {
   createInitialGameState,
   startGame,
@@ -23,6 +23,9 @@ import {
   executeBotAttributeGuess,
   executeBotDeviceSelect,
   executeBotChecklist,
+  declarePriorityTrack,
+  executeBotPriorityDeclaration,
+  needsPriorityDeclaration,
 } from '../lib/gameLogic';
 import { generateRoomCode, getOrCreatePlayerId } from '../lib/utils';
 
@@ -49,6 +52,7 @@ interface UseGameReturn {
   revealClueAction: (clueId: string) => Promise<void>;
   setGuessAction: (guess: GameState['attributeGuess']) => Promise<void>;
   calculateFinalAction: () => Promise<void>;
+  declarePriorityTrackAction: (track: PriorityTrackId) => Promise<void>;
 }
 
 export function useGame(): UseGameReturn {
@@ -313,6 +317,14 @@ export function useGame(): UseGameReturn {
     await mutate((state) => calculateFinalResult(state));
   }, [mutate]);
 
+  // Declare priority track (human player)
+  const declarePriorityTrackAction = useCallback(
+    async (track: PriorityTrackId) => {
+      await mutate((state) => declarePriorityTrack(state, playerId, track));
+    },
+    [mutate, playerId]
+  );
+
   // Bot automation: auto-execute CPU player actions with a short delay
   useEffect(() => {
     if (!gameState || gameState.status !== 'playing' || loading) return;
@@ -321,6 +333,20 @@ export function useGame(): UseGameReturn {
 
     // Determine next bot action
     let botAction: ((s: GameState) => GameState) | null = null;
+
+    // Priority declaration phase: bots declare after human has declared (or if all bots)
+    if (needsPriorityDeclaration(gameState)) {
+      const hasBotWithoutDeclaration = gameState.players.some(
+        (p) => p.isBot && gameState.priorityDeclarations[p.id] === undefined
+      );
+      if (hasBotWithoutDeclaration) {
+        const timer = setTimeout(() => {
+          mutate((s) => executeBotPriorityDeclaration(s));
+        }, 800);
+        return () => clearTimeout(timer);
+      }
+      return; // waiting for human players to declare
+    }
 
     if (gameState.phase === 1 && medBot && !gameState.clueDrawnThisRound) {
       botAction = executeBotClueAction;
@@ -390,5 +416,6 @@ export function useGame(): UseGameReturn {
     revealClueAction,
     setGuessAction,
     calculateFinalAction,
+    declarePriorityTrackAction,
   };
 }

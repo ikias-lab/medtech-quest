@@ -29,6 +29,7 @@ function App() {
     revealClueAction,
     setGuessAction,
     calculateFinalAction,
+    declarePriorityTrackAction,
   } = useGame();
 
   // Lobby: no room joined yet
@@ -81,6 +82,7 @@ function App() {
         onRevealClue={revealClueAction}
         onSetGuess={setGuessAction}
         onCalculateFinal={calculateFinalAction}
+        onDeclarePriority={declarePriorityTrackAction}
         loading={loading}
         error={error}
       />

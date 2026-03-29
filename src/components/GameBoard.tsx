@@ -1,10 +1,12 @@
-import type { GameState } from '../lib/types';
+import type { GameState, PriorityTrackId } from '../lib/types';
 import { TrackPanel } from './TrackPanel';
 import { RolePanel } from './RolePanel';
 import { CardDrawArea } from './CardDrawArea';
 import { DramaCardModal } from './DramaCardModal';
 import { PhaseInfo } from './PhaseInfo';
 import { GameLog } from './GameLog';
+import { PriorityDeclarationPanel } from './PriorityDeclarationPanel';
+import { needsPriorityDeclaration } from '../lib/gameLogic';
 
 interface GameBoardProps {
   gameState: GameState;
@@ -22,6 +24,7 @@ interface GameBoardProps {
   onRevealClue: (clueId: string) => void;
   onSetGuess: (guess: GameState['attributeGuess']) => void;
   onCalculateFinal: () => void;
+  onDeclarePriority: (track: PriorityTrackId) => void;
   loading: boolean;
   error: string | null;
 }
@@ -42,9 +45,12 @@ export function GameBoard({
   onRevealClue,
   onSetGuess,
   onCalculateFinal,
+  onDeclarePriority,
   loading,
   error,
 }: GameBoardProps) {
+  const showDeclarationPanel = needsPriorityDeclaration(gameState) ||
+    (gameState.priorityDeclarationResolved && gameState.effectCardsDrawnThisRound.length === 0);
   return (
     <div className="game-board">
       {/* Header bar */}
@@ -78,6 +84,17 @@ export function GameBoard({
         {/* Right column */}
         <div className="board-right">
           <RolePanel gameState={gameState} playerId={playerId} />
+
+          {/* Priority declaration panel (round start) */}
+          {showDeclarationPanel && (
+            <PriorityDeclarationPanel
+              gameState={gameState}
+              playerId={playerId}
+              onDeclare={onDeclarePriority}
+              loading={loading}
+            />
+          )}
+
           <CardDrawArea
             gameState={gameState}
             playerId={playerId}
